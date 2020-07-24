@@ -24,68 +24,48 @@ from utils.tasks import delete_files
 from ..models import Problem, ProblemRuleType, ProblemTag
 from ..serializers import (CreateContestProblemSerializer, CompileSPJSerializer,
                            CreateProblemSerializer, EditProblemSerializer, EditContestProblemSerializer,
-                           ProblemAdminSerializer, TestCaseUploadForm, ContestProblemMakePublicSerializer,
+                           ProblemAdminSerializer, TestCaseUploadForm,ProbblemZipUploadForm,ContestProblemMakePublicSerializer,
                            AddContestProblemSerializer, ExportProblemSerializer,
                            ExportProblemRequestSerialzier, UploadProblemForm, ImportProblemSerializer,
                            FPSProblemSerializer)
 from ..utils import TEMPLATE_BASE, build_problem_template
 
-
+#test_case zip压缩包的处理
 class TestCaseZipProcessor(object):
-    def process_zip(self, uploaded_zip_file, spj, dir=""):
+    def process_zip(self, uploaded_zip_file, spj, test_case_id, dir=""):
         try:
             zip_file = zipfile.ZipFile(uploaded_zip_file, "r")
         except zipfile.BadZipFile:
             raise APIError("Bad zip file")
-        name_list = zip_file.namelist()
-        test_case_list = self.filter_name_list(name_list, spj=spj, dir=dir)
+
+        name_list = zip_file.namelist() #['1.in', '1.out/', '1.out/part-r-00000', '1.out/part-r-00002', '1.out/part-r-00001', '2.in', '2.out/', '2.out/part-r-00000', '2.out/part-r-00002', '2.out/part-r-00001']
+        test_case_list = sorted(name_list, key=natural_sort_key)
+
         if not test_case_list:
             raise APIError("Empty file")
 
-        test_case_id = rand_str()
         test_case_dir = os.path.join(settings.TEST_CASE_DIR, test_case_id)
+
+        if os.path.exists(test_case_dir):
+            shutil.rmtree(test_case_dir)
         os.mkdir(test_case_dir)
         os.chmod(test_case_dir, 0o710)
 
-        size_cache = {}
-        md5_cache = {}
-
+        index = 1
         for item in test_case_list:
+            if item ==  str(index) + '.out/':
+                os.mkdir(os.path.join(test_case_dir, item))
+                os.chmod(os.path.join(test_case_dir, item), 0o710)
+                index += 1
+                continue
             with open(os.path.join(test_case_dir, item), "wb") as f:
                 content = zip_file.read(f"{dir}{item}").replace(b"\r\n", b"\n")
-                size_cache[item] = len(content)
-                if item.endswith(".out"):
-                    md5_cache[item] = hashlib.md5(content.rstrip()).hexdigest()
                 f.write(content)
-        test_case_info = {"spj": spj, "test_cases": {}}
+        outinfo = OutInfo(test_case_dir, 3)
+        info = outinfo.generate_info()
+        return info,test_case_id
 
-        info = []
-
-        if spj:
-            for index, item in enumerate(test_case_list):
-                data = {"input_name": item, "input_size": size_cache[item]}
-                info.append(data)
-                test_case_info["test_cases"][str(index + 1)] = data
-        else:
-            # ["1.in", "1.out", "2.in", "2.out"] => [("1.in", "1.out"), ("2.in", "2.out")]
-            test_case_list = zip(*[test_case_list[i::2] for i in range(2)])
-            for index, item in enumerate(test_case_list):
-                data = {"stripped_output_md5": md5_cache[item[1]],
-                        "input_size": size_cache[item[0]],
-                        "output_size": size_cache[item[1]],
-                        "input_name": item[0],
-                        "output_name": item[1]}
-                info.append(data)
-                test_case_info["test_cases"][str(index + 1)] = data
-
-        with open(os.path.join(test_case_dir, "info"), "w", encoding="utf-8") as f:
-            f.write(json.dumps(test_case_info, indent=4))
-
-        for item in os.listdir(test_case_dir):
-            os.chmod(os.path.join(test_case_dir, item), 0o640)
-
-        return info, test_case_id
-
+    #返回一个排了序的xxx/1.in xxx/1.out的list
     def filter_name_list(self, name_list, spj, dir=""):
         ret = []
         prefix = 1
@@ -110,6 +90,34 @@ class TestCaseZipProcessor(object):
                 else:
                     return sorted(ret, key=natural_sort_key)
 
+class OutInfo(object):
+    def __init__(self,problem_dir,num_reduce_task = 1):
+        self._problem_dir = problem_dir
+        self._num_reduce_task = num_reduce_task
+    def generate_info(self):
+        info = {'numReduceTask':self._num_reduce_task}
+        info['test_cases'] = {}
+        case_id = 1
+        while True:
+            input_path = os.path.join(self._problem_dir,str(case_id) + '.out')
+            if os.path.exists(input_path):
+                stripped_output_md5_list = []
+                for part_id in range(self._num_reduce_task):
+                    file_path = os.path.join(input_path,'part-r-' + '{:05d}'.format(part_id))
+                    with open(file_path) as f:
+                        content = f.read()
+                        item_info = hashlib.md5(content.encode('utf-8').rstrip()).hexdigest()
+                        stripped_output_md5_list.append(item_info)
+                item = {'stripped_output_md5':stripped_output_md5_list}
+                info['test_cases'][case_id] = item
+            else:
+                break
+            case_id += 1
+        info_path = os.path.join(self._problem_dir,'info')
+
+        with open(info_path,"w", encoding="utf-8") as info_f:
+            info_f.write(json.dumps(info))
+        return info
 
 class TestCaseAPI(CSRFExemptAPIView, TestCaseZipProcessor):
     request_parsers = ()
@@ -152,14 +160,56 @@ class TestCaseAPI(CSRFExemptAPIView, TestCaseZipProcessor):
         else:
             return self.error("Upload failed")
         zip_file = f"/tmp/{rand_str()}.zip"
+
         with open(zip_file, "wb") as f:
             for chunk in file:
                 f.write(chunk)
-        info, test_case_id = self.process_zip(zip_file, spj=spj)
+        info, test_case_id = self.process_zip(zip_file, spj=spj,test_case_id=str(request.POST['_id']))
         os.remove(zip_file)
+        # print('id = ',test_case_id,'info = ',info)
         return self.success({"id": test_case_id, "info": info, "spj": spj})
 
+class ProblemZipAPI(CSRFExemptAPIView):
+    #此代码不能少，APIView类限定了request_parsers()只能为(JSONParser, URLEncodedParser),但此处我提交的是一个form表单
+    #不加此行代码会报unknown content-type错误
+    request_parsers = ()
 
+    def post(self, request):
+        print('post = ',request.POST,request.FILES)
+        form = ProbblemZipUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            file = form.cleaned_data["file"]
+        else:
+            return self.error("Upload failed")
+        id = str(request.POST['_id'])
+
+        zip_file_address = os.path.join(settings.PROBLEM_ZIP_DIR,id) + '.zip'
+        if os.path.exists(zip_file_address):
+            os.remove(zip_file_address)
+        with open(zip_file_address, "wb") as f:
+            for chunk in file:
+                f.write(chunk)
+
+        zip_file = zipfile.ZipFile(zip_file_address, "r")
+        name_list = zip_file.namelist()
+        # print(name_list)
+
+        problem_dir_name = os.path.join(settings.PROBLEM_ZIP_DIR,name_list[0])
+        if os.path.exists(problem_dir_name):
+            shutil.rmtree(problem_dir_name)
+
+        for item in name_list:
+            path = os.path.join(settings.PROBLEM_ZIP_DIR, item)
+            if path[-1] == '/':
+                os.mkdir(path)
+                continue
+            with open(path, "wb") as f:
+                content = zip_file.read(f"{item}").replace(b"\r\n", b"\n")
+                f.write(content)
+        os.remove(zip_file_address)
+        return self.success({"id": id})
+
+#compile spj
 class CompileSPJAPI(APIView):
     @validate_serializer(CompileSPJSerializer)
     def post(self, request):
@@ -173,6 +223,7 @@ class CompileSPJAPI(APIView):
 
 
 class ProblemBase(APIView):
+    #基本检查，是否是spj problemtype是OI还是acm
     def common_checks(self, request):
         data = request.data
         if data["spj"]:
@@ -195,8 +246,9 @@ class ProblemBase(APIView):
             data["total_score"] = total_score
         data["languages"] = list(data["languages"])
 
-
+#problem基本api，增删改查
 class ProblemAPI(ProblemBase):
+    #添加题目
     @problem_permission_required
     @validate_serializer(CreateProblemSerializer)
     def post(self, request):
@@ -224,6 +276,7 @@ class ProblemAPI(ProblemBase):
             problem.tags.add(tag)
         return self.success(ProblemAdminSerializer(problem).data)
 
+    #获取题目
     @problem_permission_required
     def get(self, request):
         problem_id = request.GET.get("id")
@@ -251,6 +304,7 @@ class ProblemAPI(ProblemBase):
             problems = problems.filter(created_by=user)
         return self.success(self.paginate_data(request, problems, ProblemAdminSerializer))
 
+    #修改题目
     @problem_permission_required
     @validate_serializer(EditProblemSerializer)
     def put(self, request):
@@ -290,6 +344,7 @@ class ProblemAPI(ProblemBase):
 
         return self.success()
 
+    #删除题目
     @problem_permission_required
     def delete(self, request):
         id = request.GET.get("id")
@@ -306,7 +361,7 @@ class ProblemAPI(ProblemBase):
         problem.delete()
         return self.success()
 
-
+#contest中problem模块曾增删改查
 class ContestProblemAPI(ProblemBase):
     @validate_serializer(CreateContestProblemSerializer)
     def post(self, request):
@@ -335,6 +390,7 @@ class ContestProblemAPI(ProblemBase):
         data["contest"] = contest
         tags = data.pop("tags")
         data["created_by"] = request.user
+
         problem = Problem.objects.create(**data)
 
         for item in tags:
@@ -472,6 +528,7 @@ class AddContestProblemAPI(APIView):
     @validate_serializer(AddContestProblemSerializer)
     def post(self, request):
         data = request.data
+        # print('data = ',data)
         try:
             contest = Contest.objects.get(id=data["contest_id"])
             problem = Problem.objects.get(id=data["problem_id"])
@@ -495,7 +552,7 @@ class AddContestProblemAPI(APIView):
         problem.tags.set(tags)
         return self.success()
 
-
+#导出题目的API
 class ExportProblemAPI(APIView):
     def choose_answers(self, user, problem):
         ret = []
@@ -545,7 +602,7 @@ class ExportProblemAPI(APIView):
         resp["Content-Disposition"] = f"attachment;filename=problem-export.zip"
         return resp
 
-
+#导入题目的API
 class ImportProblemAPI(CSRFExemptAPIView, TestCaseZipProcessor):
     request_parsers = ()
 
@@ -624,7 +681,7 @@ class ImportProblemAPI(CSRFExemptAPIView, TestCaseZipProcessor):
                             problem_obj.tags.add(tag_obj)
         return self.success({"import_count": count})
 
-
+#FPS问题导入
 class FPSProblemImport(CSRFExemptAPIView):
     request_parsers = ()
 

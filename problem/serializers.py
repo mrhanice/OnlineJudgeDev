@@ -15,6 +15,8 @@ class TestCaseUploadForm(forms.Form):
     spj = forms.CharField(max_length=12)
     file = forms.FileField()
 
+class ProbblemZipUploadForm(forms.Form):
+    file = forms.FileField()
 
 class CreateSampleSerializer(serializers.Serializer):
     input = serializers.CharField(trim_whitespace=False)
