@@ -220,10 +220,10 @@ class JudgeDispatcher(DispatcherBase):
         data = {
             "language_config": sub_config["config"],
             "src": code,
-            "max_cpu_time": 3,
-            'problem_id':0,
+            "max_cpu_time": self.problem.time_limit,
+            'test_case_id':self.problem.test_case_id,
         }
-
+        # print(data)
         resp = self._request(('http://127.0.0.1:10010' + '/judgebigdata'), data=data)
         print(resp)
 
@@ -256,25 +256,25 @@ class JudgeDispatcher(DispatcherBase):
 
             self.submission.result = errcodedict[resp['data']]
             self.submission.statistic_info["memory_cost"] = 1000
-            self.submission.statistic_info["time_cost"] = 60
+            self.submission.statistic_info["time_cost"] = 0
             self.submission.statistic_info["err_info"] = None
             self.submission.statistic_info["score"] = 100 if resp['data'] == 'AC' else 0
         self.submission.save()
 
-        # if self.contest_id:
-        #     if self.contest.status != ContestStatus.CONTEST_UNDERWAY or \
-        #             User.objects.get(id=self.submission.user_id).is_contest_admin(self.contest):
-        #         logger.info(
-        #             "Contest debug mode, id: " + str(self.contest_id) + ", submission id: " + self.submission.id)
-        #         return
-        #     with transaction.atomic():
-        #         self.update_contest_problem_status()
-        #         self.update_contest_rank()
-        # else:
-        #     if self.last_result:
-        #         self.update_problem_status_rejudge()
-        #     else:
-        #         self.update_problem_status()
+        if self.contest_id:
+            if self.contest.status != ContestStatus.CONTEST_UNDERWAY or \
+                    User.objects.get(id=self.submission.user_id).is_contest_admin(self.contest):
+                logger.info(
+                    "Contest debug mode, id: " + str(self.contest_id) + ", submission id: " + self.submission.id)
+                return
+            with transaction.atomic():
+                self.update_contest_problem_status()
+                self.update_contest_rank()
+        else:
+            if self.last_result:
+                self.update_problem_status_rejudge()
+            else:
+                self.update_problem_status()
 
 
     #rejudge后，处理完提交后，更新problem的状态
