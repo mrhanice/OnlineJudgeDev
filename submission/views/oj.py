@@ -50,6 +50,7 @@ class SubmissionAPI(APIView):
     def post(self, request):
         # print("this is post",request.data)
         # print("user is ",request.user)
+
         data = request.data
         hide_id = False
         if data.get("contest_id"):
