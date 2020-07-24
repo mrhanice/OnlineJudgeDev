@@ -18,7 +18,7 @@ from ..serializers import ContestAnnouncementSerializer
 from ..serializers import ContestSerializer, ContestPasswordVerifySerializer
 from ..serializers import OIContestRankSerializer, ACMContestRankSerializer
 
-
+#查看 ContestAnnouncementList
 class ContestAnnouncementListAPI(APIView):
     @check_contest_permission(check_type="announcements")
     def get(self, request):
@@ -31,7 +31,7 @@ class ContestAnnouncementListAPI(APIView):
             data = data.filter(id__gt=max_id)
         return self.success(ContestAnnouncementSerializer(data, many=True).data)
 
-
+#查看 contest
 class ContestAPI(APIView):
     def get(self, request):
         id = request.GET.get("id")
@@ -45,7 +45,7 @@ class ContestAPI(APIView):
         data["now"] = datetime2str(now())
         return self.success(data)
 
-
+#查看ContestListAPI
 class ContestListAPI(APIView):
     def get(self, request):
         contests = Contest.objects.select_related("created_by").filter(visible=True)
@@ -66,7 +66,7 @@ class ContestListAPI(APIView):
                 contests = contests.filter(start_time__lte=cur, end_time__gte=cur)
         return self.success(self.paginate_data(request, contests, ContestSerializer))
 
-
+#验证contesnt的password
 class ContestPasswordVerifyAPI(APIView):
     @validate_serializer(ContestPasswordVerifySerializer)
     @login_required

@@ -22,6 +22,7 @@ from ..serializers import (ContestAnnouncementSerializer, ContestAdminSerializer
 
 
 class ContestAPI(APIView):
+    #创建contest
     @validate_serializer(CreateConetestSeriaizer)
     def post(self, request):
         data = request.data
@@ -40,6 +41,7 @@ class ContestAPI(APIView):
         contest = Contest.objects.create(**data)
         return self.success(ContestAdminSerializer(contest).data)
 
+    #修改contest
     @validate_serializer(EditConetestSeriaizer)
     def put(self, request):
         data = request.data
@@ -68,6 +70,7 @@ class ContestAPI(APIView):
         contest.save()
         return self.success(ContestAdminSerializer(contest).data)
 
+    #获取contest
     def get(self, request):
         contest_id = request.GET.get("id")
         if contest_id:
@@ -87,7 +90,7 @@ class ContestAPI(APIView):
             contests = contests.filter(title__contains=keyword)
         return self.success(self.paginate_data(request, contests, ContestAdminSerializer))
 
-
+#ContestAnnouncementAPI 增删改查
 class ContestAnnouncementAPI(APIView):
     @validate_serializer(CreateContestAnnouncementSerializer)
     def post(self, request):
@@ -158,7 +161,7 @@ class ContestAnnouncementAPI(APIView):
             contest_announcements = contest_announcements.filter(title__contains=keyword)
         return self.success(ContestAnnouncementSerializer(contest_announcements, many=True).data)
 
-
+#ACMContestHelper API 获取和修改
 class ACMContestHelper(APIView):
     @check_contest_permission(check_type="ranks")
     def get(self, request):
