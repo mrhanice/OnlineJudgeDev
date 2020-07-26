@@ -129,7 +129,9 @@ STATIC_URL = '/public/'
 
 AUTH_USER_MODEL = 'account.User'
 
-TEST_CASE_DIR = os.path.join(DATA_DIR, "test_case")
+# TEST_CASE_DIR = os.path.join(DATA_DIR, "test_case")
+TEST_CASE_DIR = '/OJ/test_case'
+PROBLEM_ZIP_DIR = '/OJ/problems'
 LOG_PATH = os.path.join(DATA_DIR, "log")
 
 AVATAR_URI_PREFIX = "/public/avatar"
