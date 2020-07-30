@@ -220,10 +220,10 @@ class JudgeDispatcher(DispatcherBase):
         data = {
             "language_config": sub_config["config"],
             "src": code,
-            "max_cpu_time": self.problem.time_limit,
+            "max_cpu_time": self.problem.time_limit/1000,
             'test_case_id':self.problem.test_case_id,
         }
-        # print(data)
+        print(data)
         resp = self._request(('http://127.0.0.1:10010' + '/judgebigdata'), data=data)
         print(resp)
 
@@ -235,11 +235,16 @@ class JudgeDispatcher(DispatcherBase):
 
 
         if resp["err"]:
-            # self.submission.result = JudgeStatus.COMPILE_ERROR
+            # self.submission.result = Judg..
+            # ceStatus.COMPILE_ERROR
 
             self.submission.result = errcodedict[resp["err"]]
             self.submission.statistic_info["err_info"] = resp['data']
             self.submission.statistic_info["score"] = 0
+            if resp["err"] == "TimeLimitExceeded":
+                self.submission.statistic_info["time_cost"] = self.problem.time_limit
+            else:
+                self.submission.statistic_info["time_cost"] = 0
         else:
             # resp["data"].sort(key=lambda x: int(x["test_case"]))
             # self.submission.info = resp
@@ -254,11 +259,11 @@ class JudgeDispatcher(DispatcherBase):
             # else:
             #     self.submission.result = JudgeStatus.PARTIALLY_ACCEPTED
 
-            self.submission.result = errcodedict[resp['data']]
+            self.submission.result = errcodedict[resp['data']['judge_status']]
             self.submission.statistic_info["memory_cost"] = 1000
-            self.submission.statistic_info["time_cost"] = 0
+            self.submission.statistic_info["time_cost"] = round(resp['data']['cpu_cost_time']*1000)
             self.submission.statistic_info["err_info"] = None
-            self.submission.statistic_info["score"] = 100 if resp['data'] == 'AC' else 0
+            self.submission.statistic_info["score"] = 100 if resp['data']['judge_status'] == 'AC' else 0
         self.submission.save()
 
         if self.contest_id:
