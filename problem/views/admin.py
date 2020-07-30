@@ -192,12 +192,12 @@ class ProblemZipAPI(CSRFExemptAPIView):
 
         zip_file = zipfile.ZipFile(zip_file_address, "r")
         name_list = zip_file.namelist()
-        # print(name_list)
+        print(name_list)
 
         problem_dir_name = os.path.join(settings.PROBLEM_ZIP_DIR,name_list[0])
         if os.path.exists(problem_dir_name):
             shutil.rmtree(problem_dir_name)
-
+        # os.mkdir(problem_dir_name)
         for item in name_list:
             path = os.path.join(settings.PROBLEM_ZIP_DIR, item)
             if path[-1] == '/':

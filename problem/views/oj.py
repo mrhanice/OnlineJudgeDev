@@ -1,5 +1,9 @@
 import random
+import os
+from django.conf import settings
 from django.db.models import Q, Count
+from django.http import FileResponse
+
 from utils.api import APIView
 from account.decorators import check_contest_permission
 from ..models import ProblemTag, Problem, ProblemRuleType
@@ -77,6 +81,23 @@ class ProblemAPI(APIView):
         data = self.paginate_data(request, problems, ProblemSerializer)
         self._add_problem_status(request, data)
         return self.success(data)
+
+class ProblemPom(APIView):
+
+    def get(self, request):
+        print(request.GET)
+        id = request.GET.get("problem_id")
+        print('id = ',id)
+        problem = Problem.objects.get(id=id)
+        problem_id = problem.test_case_id
+        pomfile_address = os.path.join(settings.PROBLEM_ZIP_DIR,str(problem_id),'pom.xml')
+        print('pomfile_address = ',pomfile_address)
+        file = open(pomfile_address,'rb')
+        response = FileResponse(file)
+        response['Content-Type'] = 'application/OCTET-STREAM'
+        name = 'pom.xml'
+        response['Content-Disposition'] = f'attachment;filename={name}'
+        return response
 
 
 class ContestProblemAPI(APIView):
