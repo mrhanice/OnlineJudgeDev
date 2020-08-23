@@ -167,7 +167,7 @@ class JudgeDispatcher(DispatcherBase):
                 cache.lpush(CacheKey.waiting_queue, json.dumps(data))
                 return
             Submission.objects.filter(id=self.submission.id).update(result=JudgeStatus.JUDGING)
-            resp = self._request(urljoin(server.service_url, "/judge"), data=data)
+            resp = self._request(urljoin(server.service_url, "/judgebigdata"), data=data)
 
         if not resp:
             Submission.objects.filter(id=self.submission.id).update(result=JudgeStatus.SYSTEM_ERROR)
@@ -225,6 +225,16 @@ class JudgeDispatcher(DispatcherBase):
         }
         print(data)
         resp = self._request(('http://127.0.0.1:10010' + '/judgebigdata'), data=data)
+
+        # 选择一个server
+        # with ChooseJudgeServer() as server:
+        #     if not server:
+        #         data = {"submission_id": self.submission.id, "problem_id": self.problem.id}
+        #         cache.lpush(CacheKey.waiting_queue, json.dumps(data))
+        #         return
+        #     Submission.objects.filter(id=self.submission.id).update(result=JudgeStatus.JUDGING)
+        #     resp = self._request(urljoin(server.service_url, "/judge"), data=data)
+
         print(resp)
 
         errcodedict = {"CompileError":-2,"TimeLimitExceeded":1,"JudgeRuntimeError":4,"WA":-1,"AC":0}

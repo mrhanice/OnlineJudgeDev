@@ -186,6 +186,16 @@ _hadoop_config = {
     }
 }
 
+_spark_config = {
+    "name": "spark",
+    "compile": {
+        "compile_command": "mvn clean package -e | tee {compile_log}"
+    },
+    "run": {
+        "command": "bin/spark-submit --class {main_class} --master {master} {jar_path} {input_path} {out_path} | tee {out_log}",
+    }
+}
+
 languages = [
     {"config": _c_lang_config, "spj": {"compile": _c_lang_spj_compile, "config": _c_lang_spj_config},
      "name": "C", "description": "GCC 5.4", "content_type": "text/x-csrc"},
@@ -195,4 +205,5 @@ languages = [
     {"config": _py2_lang_config, "name": "Python2", "description": "Python 2.7", "content_type": "text/x-python"},
     {"config": _py3_lang_config, "name": "Python3", "description": "Python 3.5", "content_type": "text/x-python"},
     {'config':_hadoop_config,'name':'Hadoop',"description": "hadoop 2.7","content_type": "text/x-hadoop"},
+    {'config':_spark_config,'name':'Spark',"description": "spark 2.4","content_type": "text/x-spark"},
 ]
