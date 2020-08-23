@@ -85,13 +85,13 @@ class ProblemAPI(APIView):
 class ProblemPom(APIView):
 
     def get(self, request):
-        print(request.GET)
+        # print(request.GET)
         id = request.GET.get("problem_id")
-        print('id = ',id)
+        # print('id = ',id)
         problem = Problem.objects.get(id=id)
         problem_id = problem.test_case_id
         pomfile_address = os.path.join(settings.PROBLEM_ZIP_DIR,str(problem_id),'pom.xml')
-        print('pomfile_address = ',pomfile_address)
+        # print('pomfile_address = ',pomfile_address)
         file = open(pomfile_address,'rb')
         response = FileResponse(file)
         response['Content-Type'] = 'application/OCTET-STREAM'

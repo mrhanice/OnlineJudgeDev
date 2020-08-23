@@ -61,7 +61,7 @@ class TestCaseZipProcessor(object):
             with open(os.path.join(test_case_dir, item), "wb") as f:
                 content = zip_file.read(f"{dir}{item}").replace(b"\r\n", b"\n")
                 f.write(content)
-        outinfo = OutInfo(test_case_dir, 3)
+        outinfo = OutInfo(test_case_dir, 4)
         info = outinfo.generate_info()
         return info,test_case_id
 
@@ -85,6 +85,8 @@ class TestCaseZipProcessor(object):
                 if f"{dir}{in_name}" in name_list and f"{dir}{out_name}" in name_list:
                     ret.append(in_name)
                     ret.append(out_name)
+                    for i in range(0,4):
+                        ret.append(out_name + '/' + str(i))
                     prefix += 1
                     continue
                 else:
@@ -103,7 +105,7 @@ class OutInfo(object):
             if os.path.exists(input_path):
                 stripped_output_md5_list = []
                 for part_id in range(self._num_reduce_task):
-                    file_path = os.path.join(input_path,'part-r-' + '{:05d}'.format(part_id))
+                    file_path = os.path.join(input_path,str(part_id))
                     with open(file_path) as f:
                         content = f.read()
                         item_info = hashlib.md5(content.encode('utf-8').rstrip()).hexdigest()
@@ -148,7 +150,7 @@ class TestCaseAPI(CSRFExemptAPIView, TestCaseZipProcessor):
         response = StreamingHttpResponse(FileWrapper(open(file_name, "rb")),
                                          content_type="application/octet-stream")
 
-        response["Content-Disposition"] = f"attachment; filename=problem_{problem.id}_test_cases.zip"
+        response["Content-Disposition"] = f"attachment; filename=problem_{problem.test_case_id}_test_cases.zip"
         response["Content-Length"] = os.path.getsize(file_name)
         return response
 
