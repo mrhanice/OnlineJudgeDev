@@ -86,7 +86,7 @@ class SubmissionAPI(APIView):
                                                contest_id=data.get("contest_id"))
         # print('submission is ',submission)
         # use this for debug
-        if data['language'] in ['Hadoop',]:
+        if data['language'] in ['Hadoop','Spark']:
             JudgeDispatcher(submission.id, problem.id).judge_big_data()
         else:
             JudgeDispatcher(submission.id, problem.id).judge()
