@@ -51,8 +51,17 @@ class TestCaseZipProcessor(object):
         os.mkdir(test_case_dir)
         os.chmod(test_case_dir, 0o710)
 
+        partitions = 1
         index = 1
         for item in test_case_list:
+            if item == str(index) + '.out/':
+                if str(index) + '.in' not in test_case_list:
+                    raise APIError("Input and output must be paired")
+
+            if item == str(index) + '.in':
+                if str(index) + '.out/' not in test_case_list:
+                    raise APIError("Input and output must be paired")
+
             if item ==  str(index) + '.out/':
                 os.mkdir(os.path.join(test_case_dir, item))
                 os.chmod(os.path.join(test_case_dir, item), 0o710)
@@ -61,12 +70,16 @@ class TestCaseZipProcessor(object):
             with open(os.path.join(test_case_dir, item), "wb") as f:
                 content = zip_file.read(f"{dir}{item}").replace(b"\r\n", b"\n")
                 f.write(content)
-        outinfo = OutInfo(test_case_dir, 4)
+                pathsplits = os.path.split(item)
+                if len(pathsplits) >= 2 and pathsplits[-2].endswith(".out"):
+                    partitions = max(partitions,int(os.path.split(item)[-1]))
+        # print("partition = ",partitions)
+        outinfo = OutInfo(test_case_dir, partitions)
         info = outinfo.generate_info()
         return info,test_case_id
 
     #返回一个排了序的xxx/1.in xxx/1.out的list
-    def filter_name_list(self, name_list, spj, dir=""):
+    def filter_name_list(self, name_list,test_case_dir, spj, dir=""):
         ret = []
         prefix = 1
         if spj:
@@ -79,13 +92,18 @@ class TestCaseZipProcessor(object):
                 else:
                     return sorted(ret, key=natural_sort_key)
         else:
+            info_add = os.path.join(test_case_dir,"info")
+            partitions = 1
+            with open(info_add,"r",encoding="utf-8") as info_f:
+                content = info_f.read()
+                partitions = json.loads(content)['partitions']
             while True:
                 in_name = f"{prefix}.in"
                 out_name = f"{prefix}.out"
                 if f"{dir}{in_name}" in name_list and f"{dir}{out_name}" in name_list:
                     ret.append(in_name)
                     ret.append(out_name)
-                    for i in range(0,4):
+                    for i in range(0,partitions):
                         ret.append(out_name + '/' + str(i))
                     prefix += 1
                     continue
@@ -97,7 +115,7 @@ class OutInfo(object):
         self._problem_dir = problem_dir
         self._num_reduce_task = num_reduce_task
     def generate_info(self):
-        info = {'numReduceTask':self._num_reduce_task}
+        info = {'partitions':self._num_reduce_task}
         info['test_cases'] = {}
         case_id = 1
         while True:
@@ -141,7 +159,7 @@ class TestCaseAPI(CSRFExemptAPIView, TestCaseZipProcessor):
         test_case_dir = os.path.join(settings.TEST_CASE_DIR, problem.test_case_id)
         if not os.path.isdir(test_case_dir):
             return self.error("Test case does not exists")
-        name_list = self.filter_name_list(os.listdir(test_case_dir), problem.spj)
+        name_list = self.filter_name_list(os.listdir(test_case_dir),test_case_dir,problem.spj)
         name_list.append("info")
         file_name = os.path.join(test_case_dir, problem.test_case_id + ".zip")
         with zipfile.ZipFile(file_name, "w") as file:
@@ -177,7 +195,7 @@ class ProblemZipAPI(CSRFExemptAPIView):
     request_parsers = ()
 
     def post(self, request):
-        print('post = ',request.POST,request.FILES)
+        # print('post = ',request.POST,request.FILES)
         form = ProbblemZipUploadForm(request.POST, request.FILES)
         if form.is_valid():
             file = form.cleaned_data["file"]
@@ -194,7 +212,7 @@ class ProblemZipAPI(CSRFExemptAPIView):
 
         zip_file = zipfile.ZipFile(zip_file_address, "r")
         name_list = zip_file.namelist()
-        print(name_list)
+        # print(name_list)
 
         problem_dir_name = os.path.join(settings.PROBLEM_ZIP_DIR,name_list[0])
         if os.path.exists(problem_dir_name):

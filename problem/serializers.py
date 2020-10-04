@@ -56,7 +56,7 @@ class CreateOrEditProblemSerializer(serializers.Serializer):
     samples = serializers.ListField(child=CreateSampleSerializer(), allow_empty=False)
     test_case_id = serializers.CharField(max_length=32)
     test_case_score = serializers.ListField(child=CreateTestCaseScoreSerializer(), allow_empty=True)
-    time_limit = serializers.IntegerField(min_value=1, max_value=1000 * 120)
+    time_limit = serializers.IntegerField(min_value=1, max_value=1000 * 300)
     memory_limit = serializers.IntegerField(min_value=1, max_value=1024)
     languages = LanguageNameMultiChoiceField()
     template = serializers.DictField(child=serializers.CharField(min_length=1))
