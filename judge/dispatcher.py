@@ -57,8 +57,9 @@ class ChooseJudgeServer:
 #基调度器
 class DispatcherBase(object):
     def __init__(self):
-        token = 'judge_server_token'
-        self.token = hashlib.sha256(token.encode("utf-8")).hexdigest()#获取token
+        # token = 'judge_server_token'
+        # self.token = hashlib.sha256(token.encode("utf-8")).hexdigest()#获取token
+        self.token = hashlib.sha256(SysOptions.judge_server_token.encode("utf-8")).hexdigest()
 
     #发送post请求
     def _request(self, url, data=None):
@@ -223,8 +224,8 @@ class JudgeDispatcher(DispatcherBase):
             "max_cpu_time": self.problem.time_limit/1000,
             'test_case_id':self.problem.test_case_id,
         }
-        print(data)
-        resp = self._request(('http://127.0.0.1:10010' + '/judgebigdata'), data=data)
+        # print(data)
+        resp = self._request(('http://127.0.0.1:8090' + '/judgebigdata'), data=data)
 
         # 选择一个server
         # with ChooseJudgeServer() as server:
@@ -233,9 +234,9 @@ class JudgeDispatcher(DispatcherBase):
         #         cache.lpush(CacheKey.waiting_queue, json.dumps(data))
         #         return
         #     Submission.objects.filter(id=self.submission.id).update(result=JudgeStatus.JUDGING)
-        #     resp = self._request(urljoin(server.service_url, "/judge"), data=data)
+        #     resp = self._request(urljoin(server.service_url, "/judgebigdata"), data=data)
 
-        print(resp)
+        # print(resp)
 
         errcodedict = {"CompileError":-2,"TimeLimitExceeded":1,"JudgeRuntimeError":4,"WA":-1,"AC":0}
 

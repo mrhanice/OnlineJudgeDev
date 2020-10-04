@@ -179,31 +179,66 @@ _py3_lang_config = {
 _hadoop_config = {
     "name": "hadoop",
     "compile": {
-        "compile_command": "mvn clean package -e | tee {compile_log}"
+        "compile_command": "/usr/local/apache-maven-3.5.3/bin/mvn clean package -e | tee {compile_log}"
     },
     "run": {
-        "command": "hadoop jar {jar_path} {main_class} {input_path} {out_path} | tee {out_log}",
+        "command": "/usr/local/hadoop-2.7.7/bin/hadoop jar {jar_path} {main_class} {input_path} {out_path} | tee {out_log}",
     }
 }
 
-_spark_config = {
-    "name": "spark",
+_spark_config_Scala = {
+    "name": "spark-Scala",
     "compile": {
-        "compile_command": "mvn clean package -e | tee {compile_log}"
+        "compile_command": "/usr/local/apache-maven-3.5.3/bin/mvn clean package -e | tee {compile_log}"
     },
     "run": {
-        "command": "bin/spark-submit --class {main_class} --master {master} {jar_path} {input_path} {out_path} | tee {out_log}",
+        "command": "/usr/local/spark-2.4.6-bin-hadoop2.7/bin/spark-submit --class {main_class} --master {master} {jar_path} {input_path} {out_path} | tee {out_log}",
     }
+}
+
+
+_spark_config_Java = {
+    "name": "spark-Java",
+    "compile": {
+        "compile_command": "/usr/local/apache-maven-3.5.3/bin/mvn clean package -e | tee {compile_log}"
+    },
+    "run": {
+        "command": "/usr/local/spark-2.4.6-bin-hadoop2.7/bin/spark-submit --class {main_class} --master {master} {jar_path} {input_path} {out_path} | tee {out_log}",
+    }
+}
+
+_flink_config_Scala = {
+        "name": "flink-Scala",
+        "compile": {
+            "compile_command": "/usr/local/apache-maven-3.5.3/bin/mvn clean package -e | tee {compile_log}"
+        },
+        "run": {
+            "command": "/usr/local/flink-1.10.2/bin/flink run -c {main_class} {jar_path} {input_path} {out_path} | tee {out_log}",
+        }
+}
+
+_flink_config_Java = {
+        "name": "flink-Java",
+        "compile": {
+            "compile_command": "/usr/local/apache-maven-3.5.3/bin/mvn clean package -e | tee {compile_log}"
+        },
+        "run": {
+            "command": "/usr/local/flink-1.10.2/bin/flink run -c {main_class} {jar_path} {input_path} {out_path} | tee {out_log}",
+        }
 }
 
 languages = [
     {"config": _c_lang_config, "spj": {"compile": _c_lang_spj_compile, "config": _c_lang_spj_config},
      "name": "C", "description": "GCC 5.4", "content_type": "text/x-csrc"},
-    {"config": _cpp_lang_config, "spj": {"compile": _cpp_lang_spj_compile, "config": _cpp_lang_spj_config},
-     "name": "C++", "description": "G++ 5.4", "content_type": "text/x-c++src"},
-    {"config": _java_lang_config, "name": "Java", "description": "OpenJDK 1.8", "content_type": "text/x-java"},
-    {"config": _py2_lang_config, "name": "Python2", "description": "Python 2.7", "content_type": "text/x-python"},
-    {"config": _py3_lang_config, "name": "Python3", "description": "Python 3.5", "content_type": "text/x-python"},
-    {'config':_hadoop_config,'name':'Hadoop',"description": "hadoop 2.7","content_type": "text/x-hadoop"},
-    {'config':_spark_config,'name':'Spark',"description": "spark 2.4","content_type": "text/x-spark"},
+    # {"config": _cpp_lang_config, "spj": {"compile": _cpp_lang_spj_compile, "config": _cpp_lang_spj_config},
+    #  "name": "C++", "description": "G++ 5.4", "content_type": "text/x-c++src"},
+    # {"config": _java_lang_config, "name": "Java", "description": "OpenJDK 1.8", "content_type": "text/x-java"},
+    # {"config": _py2_lang_config, "name": "Python2", "description": "Python 2.7", "content_type": "text/x-python"},
+    # {"config": _py3_lang_config, "name": "Python3", "description": "Python 3.5", "content_type": "text/x-python"},
+    {'config': _hadoop_config,'name':'Hadoop',"description": "hadoop 2.7","content_type": "text/x-hadoop"},
+    {'config': _spark_config_Scala,'name':'Spark-Scala',"description": "spark 2.4","content_type": "text/x-spark"},
+    {'config': _spark_config_Java,'name':'Spark-Java',"description": "spark 2.4","content_type": "text/x-spark"},
+    {'config': _flink_config_Scala,'name':'Flink-Scala',"description": "flink 1.10.2","content_type": "text/x-flink"},
+    {'config': _flink_config_Java,'name':'Flink-Java',"description": "flink 1.10.2","content_type": "text/x-flink"},
 ]
+# [{"name": "Hadoop", "config": {"run": {"command": "/usr/local/hadoop-2.7.7/bin/hadoop jar {jar_path} {main_class} {input_path} {out_path} | tee {out_log}"}, "name": "hadoop", "compile": {"compile_command": "/usr/local/apache-maven-3.5.3/bin/mvn clean package -e | tee {compile_log}"}}, "description": "hadoop 2.7", "content_type": "text/x-hadoop"}, {"name": "Spark-Scala", "config": {"run": {"command": "/usr/local/spark-2.4.6-bin-hadoop2.7/bin/spark-submit --class {main_class} --master {master} {jar_path} {input_path} {out_path} | tee {out_log}"}, "name": "spark-Scala", "compile": {"compile_command": "/usr/local/apache-maven-3.5.3/bin/mvn clean package -e | tee {compile_log}"}}, "description": "spark 2.4", "content_type": "text/x-spark"}, {"name": "Spark-Java", "config": {"run": {"command": "/usr/local/spark-2.4.6-bin-hadoop2.7/bin/spark-submit --class {main_class} --master {master} {jar_path} {input_path} {out_path} | tee {out_log}"}, "name": "spark-Java", "compile": {"compile_command": "/usr/local/apache-maven-3.5.3/bin/mvn clean package -e | tee {compile_log}"}}, "description": "spark 2.4", "content_type": "text/x-spark"}, {"name": "Flink-Scala", "config": {"run": {"command": "/usr/local/flink-1.10.2/bin/flink run -c {main_class}  {jar_path} {input_path} {out_path} | tee {out_log}"}, "name": "flink-Scala", "compile": {"compile_command": "mvn clean package -e | tee {compile_log}"}}, "description": "flink 1.10.2", "content_type": "text/x-flink"}, {"name": "Flink-Java", "config": {"run": {"command": "/usr/local/flink-1.10.2/bin/flink run -c {main_class}  {jar_path} {input_path} {out_path} | tee {out_log}"}, "name": "flink-Java", "compile": {"compile_command": "mvn clean package -e | tee {compile_log}"}}, "description": "flink 1.10.2", "content_type": "text/x-flink"}]
