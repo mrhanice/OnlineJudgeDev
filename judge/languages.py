@@ -182,7 +182,7 @@ _hadoop_config = {
         "compile_command": "/usr/local/apache-maven-3.5.3/bin/mvn clean package -e | tee {compile_log}"
     },
     "run": {
-        "command": "/usr/local/hadoop-2.7.7/bin/hadoop jar {jar_path} {main_class} {input_path} {out_path} | tee {out_log}",
+        "command": "hadoop jar {jar_path} {main_class} -Dmapred.job.queue.name={queue_name} {input_path} {out_path} >> {out_log} 2>&1",
     }
 }
 
@@ -192,7 +192,7 @@ _spark_config_Scala = {
         "compile_command": "/usr/local/apache-maven-3.5.3/bin/mvn clean package -e | tee {compile_log}"
     },
     "run": {
-        "command": "/usr/local/spark-2.4.6-bin-hadoop2.7/bin/spark-submit --class {main_class} --master {master} {jar_path} {input_path} {out_path} | tee {out_log}",
+        "command": "/usr/local/spark-2.4.6-bin-hadoop2.7/bin/spark-submit --queue {queue_name} --conf spark.ui.port={ui_port} --class {main_class} --master {master} {jar_path}  {input_path} {out_path} >> {out_log} 2>&1",
     }
 }
 
@@ -203,7 +203,7 @@ _spark_config_Java = {
         "compile_command": "/usr/local/apache-maven-3.5.3/bin/mvn clean package -e | tee {compile_log}"
     },
     "run": {
-        "command": "/usr/local/spark-2.4.6-bin-hadoop2.7/bin/spark-submit --class {main_class} --master {master} {jar_path} {input_path} {out_path} | tee {out_log}",
+        "command": "/usr/local/spark-2.4.6-bin-hadoop2.7/bin/spark-submit --queue {queue_name} --conf spark.ui.port={ui_port} --class {main_class} --master {master} {jar_path}  {input_path} {out_path} >> {out_log} 2>&1",
     }
 }
 
@@ -213,7 +213,7 @@ _flink_config_Scala = {
             "compile_command": "/usr/local/apache-maven-3.5.3/bin/mvn clean package -e | tee {compile_log}"
         },
         "run": {
-            "command": "/usr/local/flink-1.10.2/bin/flink run -c {main_class} {jar_path} {input_path} {out_path} | tee {out_log}",
+            "command": "/usr/local/flink-1.10.2/bin/flink run -m {cluster} -c {main_class} -yqu {queue_name} {jar_path} {input_path} {out_path} >> {out_log} 2>&1",
         }
 }
 
@@ -223,7 +223,7 @@ _flink_config_Java = {
             "compile_command": "/usr/local/apache-maven-3.5.3/bin/mvn clean package -e | tee {compile_log}"
         },
         "run": {
-            "command": "/usr/local/flink-1.10.2/bin/flink run -c {main_class} {jar_path} {input_path} {out_path} | tee {out_log}",
+            "command": "/usr/local/flink-1.10.2/bin/flink run -m {cluster} -c {main_class} -yqu {queue_name} {jar_path} {input_path} {out_path} >> {out_log} 2>&1",
         }
 }
 

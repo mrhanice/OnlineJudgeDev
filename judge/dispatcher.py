@@ -57,6 +57,7 @@ class ChooseJudgeServer:
 #基调度器
 class DispatcherBase(object):
     def __init__(self):
+        # print("###########################",SysOptions.judge_server_token)
         # token = 'judge_server_token'
         # self.token = hashlib.sha256(token.encode("utf-8")).hexdigest()#获取token
         self.token = hashlib.sha256(SysOptions.judge_server_token.encode("utf-8")).hexdigest()
@@ -70,6 +71,7 @@ class DispatcherBase(object):
         try:
             return requests.post(url, **kwargs).json()
         except Exception as e:
+            print(e)
             logger.exception(e)
 
 #SPJCompiler
